@@ -3344,9 +3344,7 @@ TEST_F(VulkanAPITest, sub_to_scalar_wrapped) {
 }
 
 void test_unsqueeze(const at::IntArrayRef input_shape, int64_t dim) {
-  at::TensorOptions options(at::kCPU);
-  options = options.dtype(at::kFloat);
-
+  c10::InferenceMode mode;
   const auto in_cpu = at::rand(input_shape, at::device(at::kCPU).dtype(at::kFloat));
   const auto out_cpu = at::unsqueeze(in_cpu, dim);
 
@@ -3360,28 +3358,69 @@ void test_unsqueeze(const at::IntArrayRef input_shape, int64_t dim) {
   ASSERT_TRUE(check);
 }
 
-TEST_F(VulkanAPITest, unsqueeze_dim0) {
-  c10::InferenceMode mode;
-  test_unsqueeze({5, 7}, 0);
-  test_unsqueeze({5, 7}, -3);
-  test_unsqueeze({111, 222}, 0);
-  test_unsqueeze({111, 222}, -3);
+TEST_F(VulkanAPITest, unsqueeze_1dto2d_dim0) {
+  test_unsqueeze({5}, 0);
+  test_unsqueeze({6}, -2);
+  test_unsqueeze({111}, 0);
+  test_unsqueeze({112}, -2);
 }
 
-TEST_F(VulkanAPITest, unsqueeze_dim1) {
+TEST_F(VulkanAPITest, unsqueeze_1dto2d_dim1) {
+  test_unsqueeze({5}, 1);
+  test_unsqueeze({6}, -1);
+  test_unsqueeze({111}, 1);
+  test_unsqueeze({112}, -1);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_2dto3d_dim0) {
+  test_unsqueeze({5, 7}, 0);
+  test_unsqueeze({7, 5}, -3);
+  test_unsqueeze({111, 222}, 0);
+  test_unsqueeze({222, 111}, -3);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_2dto3d_dim1) {
   c10::InferenceMode mode;
   test_unsqueeze({5, 7}, 1);
-  test_unsqueeze({5, 7}, -2);
+  test_unsqueeze({7, 5}, -2);
   test_unsqueeze({111, 222}, 1);
-  test_unsqueeze({111, 222}, -2);
+  test_unsqueeze({222, 111}, -2);
 }
 
-TEST_F(VulkanAPITest, unsqueeze_dim2) {
+TEST_F(VulkanAPITest, unsqueeze_2dto3d_dim2) {
   c10::InferenceMode mode;
   test_unsqueeze({5, 7}, 2);
-  test_unsqueeze({5, 7}, -1);
+  test_unsqueeze({7, 5}, -1);
   test_unsqueeze({111, 222}, 2);
-  test_unsqueeze({111, 222}, -1);
+  test_unsqueeze({222, 111}, -1);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_3dto4d_dim0) {
+  test_unsqueeze({2, 3, 4}, 0);
+  test_unsqueeze({4, 3, 2}, -4);
+  test_unsqueeze({22, 33, 11}, 0);
+  test_unsqueeze({33, 11, 22}, -4);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_3dto4d_dim1) {
+  test_unsqueeze({2, 3, 4}, 1);
+  test_unsqueeze({4, 3, 2}, -3);
+  test_unsqueeze({22, 33, 11}, 1);
+  test_unsqueeze({33, 11, 22}, -3);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_3dto4d_dim2) {
+  test_unsqueeze({2, 3, 4}, 2);
+  test_unsqueeze({4, 3, 2}, -2);
+  test_unsqueeze({22, 33, 11}, 2);
+  test_unsqueeze({33, 11, 22}, -2);
+}
+
+TEST_F(VulkanAPITest, unsqueeze_3dto4d_dim3) {
+  test_unsqueeze({2, 3, 4}, 3);
+  test_unsqueeze({4, 3, 2}, -1);
+  test_unsqueeze({22, 33, 11}, 3);
+  test_unsqueeze({33, 11, 22}, -1);
 }
 
 TEST_F(VulkanAPITest, upsample_nearest2d) {
