@@ -1650,7 +1650,11 @@ def higher_order_op_converter():
 
 
 def requires_higher_order_op(obj):
-    return obj in higher_order_op_converter()
+    try:
+        return obj in higher_order_op_converter()
+    except:
+        # Unhashable
+        return False
 
 
 def get_higher_order_op(obj):

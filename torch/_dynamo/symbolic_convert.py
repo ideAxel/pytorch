@@ -243,6 +243,8 @@ def _detect_and_normalize_assert_statement(
 def generic_jump(truth_fn: typing.Callable[[object], bool], push: bool):
     def inner(self: "InstructionTranslatorBase", inst: Instruction):
         value: VariableTracker = self.pop()
+        if value is None:
+            unimplemented("What is this??")
         self.output.guards.update(value.guards)
         if (
             config.rewrite_assert_with_torch_assert

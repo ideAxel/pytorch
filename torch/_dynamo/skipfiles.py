@@ -33,6 +33,7 @@ import torch
 import torch._inductor.test_operators
 import torch.utils._content_store
 import torch.distributed.fsdp
+import torch.distributed.utils
 
 from . import comptime, config, external_utils
 
@@ -134,6 +135,63 @@ FILENAME_ALLOWLIST |= {
     inspect.getfile(obj)
     for obj in torch.distributed.fsdp._runtime_utils.__dict__.values()
     if inspect.isclass(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp._utils.__dict__.values()
+    if inspect.isclass(obj) or inspect.isfunction(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp._exec_order_utils.__dict__.values()
+    if inspect.isclass(obj)
+}
+
+import torch.nn.parallel.scatter_gather
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.nn.parallel.scatter_gather.__dict__.values()
+    if inspect.isclass(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.utils.__dict__.values()
+    if inspect.isclass(obj) or inspect.isfunction(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed._composable_state.__dict__.values()
+    if inspect.isclass(obj) or inspect.isfunction(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp._fsdp_extensions.__dict__.values()
+    if inspect.isclass(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp._traversal_utils.__dict__.values()
+    if inspect.isclass(obj) or inspect.isfunction(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed._composable.contract.__dict__.values()
+    if inspect.isclass(obj) or inspect.isfunction(obj)
+}
+
+# A hack, not every class in this file is safe to .getfile
+
+from torch.distributed.distributed_c10d import _reduce_op
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(_reduce_op)
 }
 
 # Do trace through match and replace patterns used in PT2E QAT

@@ -142,6 +142,7 @@ def wrap_convert_context(fn):
 def has_tensor_in_frame(frame):
     """Check if the frame has torch.* related bits"""
     # Check if the function was decorated using torch._dynamo.optimize
+    # This whole function is cursed as hell
     # return True
 
     if frame.f_code in always_optimize_code_objects:
@@ -193,7 +194,7 @@ def has_tensor_in_frame(frame):
         if has_tensor(value):
             return True
 
-    log.debug(
+    print(
         "skipping because no torch.* %s \
             %s %s",
         frame.f_code.co_name,
