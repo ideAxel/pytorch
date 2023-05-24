@@ -140,7 +140,7 @@ def _allowed_function_ids():
     """
     Walk torch.* and get the ids of all the stuff in it
     """
-    warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributed")
+    # warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributed")
     torch_object_ids = dict()
 
     def _is_allowed_module_prefix(obj):
@@ -158,7 +158,6 @@ def _allowed_function_ids():
             "torch._inductor.",
             "torch._C.inductor.",
             "torch.fx.",
-            "torch.distributed.fsdp.",
         )
         allowed_modules_dot = tuple([x + "." for x in allowed_modules])
         module = inspect.getmodule(obj)

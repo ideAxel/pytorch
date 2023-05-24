@@ -93,6 +93,10 @@ class TORCH_API ProcessGroup : public torch::CustomClassHolder {
     return size_;
   }
 
+  const c10::intrusive_ptr<::c10d::Store>& getStore() const {
+    return store_;
+  }
+
   virtual const std::string getBackendName() const {
     return options_->backend;
   };
@@ -561,7 +565,7 @@ class TORCH_API ProcessGroup : public torch::CustomClassHolder {
         opts.timeout.count());
   }
 
-  c10::intrusive_ptr<Options> getOptions() {
+  c10::intrusive_ptr<Options> getOptions() const {
     return options_;
   }
 

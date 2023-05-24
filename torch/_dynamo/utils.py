@@ -861,7 +861,17 @@ def wrap_fake_exception(fn):
 
 def deepcopy_to_fake_tensor(obj, fake_mode):
     with torch._subclasses.fake_tensor.FakeCopyMode(fake_mode):
-        return wrap_fake_exception(lambda: copy.deepcopy(obj))
+        try:
+            obj_copy = copy.deepcopy(obj)
+        except Exception as e:
+            # breakpoint()
+            # prdint("E", e)
+            # print(obj.__dict__)
+            raise
+            # obj_copy = copy.copy(obj)
+
+
+        return wrap_fake_exception(lambda: obj_copy)
 
 
 def rmse(ref, res):
@@ -1252,7 +1262,11 @@ def get_fake_value(node, tx):
             nnmodule._infer_parameters(nnmodule, args)
 
         # no matter it's lazy module or not, we should copy to fake mode.
+        # try:
         nnmodule = deepcopy_to_fake_tensor(nnmodule, tx.fake_mode)
+        # except:
+            # Shitty deepcopy stuff
+            # unimplemented("Boohoo")
 
     try:
         with tx.fake_mode, enable_python_dispatcher():
@@ -1309,6 +1323,8 @@ def run_node(tracer, node, args, kwargs, nnmodule):
     op = node.op
     try:
         if op == "call_function":
+            # print(node.target)
+            # print([type(arg) for arg in args])
             return node.target(*args, **kwargs)
         elif op == "call_method":
             return getattr(args[0], node.target)(*args[1:], **kwargs)

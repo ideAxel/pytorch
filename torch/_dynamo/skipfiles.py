@@ -32,6 +32,7 @@ import weakref
 import torch
 import torch._inductor.test_operators
 import torch.utils._content_store
+import torch.distributed.fsdp
 
 from . import comptime, config, external_utils
 
@@ -109,6 +110,7 @@ FILENAME_ALLOWLIST = {
     torch.set_rng_state.__code__.co_filename,
     torch._inductor.test_operators.__file__,
     torch.utils._content_store.__file__,
+    torch.distributed.fsdp.__file__,
     # These are dynamo files!
     external_utils.__file__,
     comptime.__file__,  # Want to inline these helpers
@@ -121,6 +123,18 @@ FILENAME_ALLOWLIST |= {
     if inspect.isclass(obj)
 }
 FILENAME_ALLOWLIST |= {torch.optim._functional.__file__}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp.__dict__.values()
+    if inspect.isclass(obj)
+}
+
+FILENAME_ALLOWLIST |= {
+    inspect.getfile(obj)
+    for obj in torch.distributed.fsdp._runtime_utils.__dict__.values()
+    if inspect.isclass(obj)
+}
 
 # Do trace through match and replace patterns used in PT2E QAT
 # Note: These patterns are comprised of torch ops and for internal use only.
@@ -169,14 +183,20 @@ def add(import_name: str):
 def check(filename, allow_torch=False):
     """Should skip this file?"""
     if filename is None:
+        print("SKIPPING DUE TO NO FILE", filename)
         return True
     if filename in FILENAME_ALLOWLIST:
+        # print("SKIPPING DUE TO ALLOW", filename)
         return False
     if allow_torch and is_torch(filename):
+        # print("NOT SKIPPING TORCH", filename)
         return False
     if is_fbcode and bool(FBCODE_SKIP_DIRS_RE.match(filename)):
         return True
-    return bool(SKIP_DIRS_RE.match(filename))
+    match = bool(SKIP_DIRS_RE.match(filename))
+    if match:
+        print("SKIPPING DUE TO MATCH", filename)
+    return match
 
 
 # skip common third party libs

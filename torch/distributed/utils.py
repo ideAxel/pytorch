@@ -138,6 +138,7 @@ def _alloc_storage(tensor: torch.Tensor, size: torch.Size) -> bool:
         return not already_allocated
 
 
+
 def _free_storage(tensor: torch.Tensor) -> bool:
     """
     Frees the underlying storage of ``tensor``.

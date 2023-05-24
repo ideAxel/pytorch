@@ -154,7 +154,7 @@ class GraphArg:
             self._example = TensorWeakRef(self._example)
             assert isinstance(
                 self.fake_tensor, torch._subclasses.fake_tensor.FakeTensor
-            )
+            ), f"Unexpected {type(self.fake_tensor)} \ {type(self._example)}"
         if isinstance(self.example, torch._subclasses.fake_tensor.FakeTensor):
             raise AssertionError("Fake Tensor observed in TorchDynamo Fx graph inputs")
 
@@ -310,6 +310,7 @@ class VariableBuilder:
         return result
 
     def _wrap(self, value):
+        # print("Wrapping", type(value))
         make_guards = self.make_guards
 
         # Handle exact type() match
@@ -327,7 +328,10 @@ class VariableBuilder:
         value = inspect.getattr_static(value, "_torchdynamo_inline", value)
 
         # Everything else (NB: order matters!)
-        if istype(value, config.traceable_tensor_subclasses):
+        from torch.distributed.fsdp.flat_param import FlatParameter
+        if istype(value, config.traceable_tensor_subclasses) or istype(value, FlatParameter):
+            if value is None:
+                print("I'm wrapping None?")
             return self.wrap_tensor(value)
         elif is_namedtuple(value):
             return self.wrap_listlike(value)
@@ -511,6 +515,7 @@ class VariableBuilder:
                 guards=make_guards(GuardBuilder.FUNCTION_MATCH),
             )
         elif isinstance(value, torch.cuda.streams.Stream):
+            unimplemented("CUDAStreamVariable does not currently work soundly.")
             return CUDAStreamVariable(
                 None,
                 value,
@@ -689,6 +694,7 @@ class VariableBuilder:
                 value, guards=self.make_guards(GuardBuilder.TYPE_MATCH)
             )
         elif getattr(value, "_is_fsdp_managed_module", False):
+            # breakpoint()
             # See note [Dynamo treats FSDP wrapped modules as UnspecializedNNModule]
             # in fully_sharded_data_parallel.py for more information
 
@@ -804,7 +810,7 @@ class VariableBuilder:
             # a later point in time.
             ignore_subclass = True
         else:
-            assert type(value) in (torch.Tensor, torch.nn.Parameter), type(value)
+            # assert type(value) in (torch.Tensor, torch.nn.Parameter), type(value)
             ignore_subclass = False
 
         is_duplicate_tensor = source in self.tx.output.input_source_to_var
@@ -839,6 +845,7 @@ class VariableBuilder:
         # ignore_subclass changes
         fake_tensor_value = None
         example_value = tensor_variable.proxy.node.meta["example_value"]
+
         if isinstance(example_value, torch._subclasses.fake_tensor.FakeTensor):
             fake_tensor_value = example_value
 
@@ -1037,7 +1044,10 @@ def wrap_fx_proxy_cls(
 
     with preserve_rng_state():
         if example_value is None:
-            example_value = get_fake_value(proxy.node, tx)
+            if "_free_storage" in str(proxy.node.target):
+                example_value = True
+            else:
+                example_value = get_fake_value(proxy.node, tx)
 
         # Handle recursive calls here
         elif isinstance(example_value, FakeTensor):
@@ -1319,7 +1329,8 @@ def _automatic_dynamic(e, tx, name, static_shapes):
 def wrap_to_fake_tensor_and_record(
     e, tx, ignore_subclass=False, *, source: Optional[Source], is_tensor: bool
 ):
-    if type(e) in (torch.Tensor, torch.nn.Parameter) or (
+    from torch.distributed.fsdp.flat_param import FlatParameter
+    if type(e) in (torch.Tensor, torch.nn.Parameter, FlatParameter) or (
         ignore_subclass and isinstance(e, torch.Tensor)
     ):
         assert source is not None
